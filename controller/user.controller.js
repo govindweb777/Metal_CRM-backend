@@ -178,6 +178,72 @@ exports.getUser= async(req,res)=>{
     }
 }
 
+exports.getUserDetails = async (req, res) => {
+    try {
+        const { email } = req.body; 
+
+        const user = await userModel.findOne({ email }).select("name email accountType");
+         console.log("Searching for user with email:", email);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found",
+            });
+        }
+        
+        return res.status(200).json({
+            success: true,
+            data: user,
+        });
+    } catch (error) {
+        console.log("Error fetching user details", error);
+        return res.status(500).json({
+            success: false,
+            message: "Error fetching user details",
+            error: error.message,
+        });
+    }
+};
+
+exports.changePassword = async (req, res) => {
+    try {
+        const { email, oldPassword, newPassword } = req.body;
+
+        const user = await userModel.findOne({ email });
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found",
+            });
+        }
+
+        const isMatch = await bcrypt.compare(oldPassword, user.password);
+        if (!isMatch) {
+            return res.status(400).json({
+                success: false,
+                message: "Old password is incorrect",
+            });
+        }
+
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        user.password = hashedPassword;
+        await user.save();
+
+        return res.status(200).json({
+            success: true,
+            message: "Password changed successfully",
+        });
+    } catch (error) {
+        console.log("Error changing password", error);
+        return res.status(500).json({
+            success: false,
+            message: "Error changing password",
+            error: error.message,
+        });
+    }
+};
+
+
 exports.deleteUser =async(req,res)=>{
     try {
 
