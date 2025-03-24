@@ -4,7 +4,6 @@ const Order= require("../models/order.model");
 const Address = require("../models/Address.model")
 
 
-
 exports.createCustomer= async(req,res)=>{
     try {
         const{

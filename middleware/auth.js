@@ -4,9 +4,10 @@ require("dotenv").config();
 const user = require("../models/user.models");
 
 //auth
-exports.auth= async(req,res,next)=>{
+const auth= async(req,res,next)=>{
     try {
-        const token = req.cookies.token || req.header.token || req.header("Authorisation").replace("Bearer","");
+        const token = req.cookies.token || req.header.token || req.header("Authorization");
+        console.log("token is:",token);
 
         //if token missing then return error
         if(!token){
@@ -15,6 +16,7 @@ exports.auth= async(req,res,next)=>{
                 message:"token is missing"
             })
         }
+        console.log("token is:",token);
 
         //decoding token
         try {
@@ -43,7 +45,9 @@ exports.auth= async(req,res,next)=>{
 
 }
 
-exports.isAdmin= async(req,res,next)=>{
+
+
+const isAdmin= async(req,res,next)=>{
     try {
         if(req.user.accountType !=="Admin"){
             return res.status(401).json({
@@ -66,7 +70,7 @@ exports.isAdmin= async(req,res,next)=>{
 }
 
 
-exports.isSuperAdmin = async(req,res,next)=>{
+const isSuperAdmin = async(req,res,next)=>{
     try {
         if(req.user.accountType!=="SuperAdmin"){
             return res.status(401).json({
@@ -87,7 +91,7 @@ exports.isSuperAdmin = async(req,res,next)=>{
     }
 }
 
-exports.isAccount = async(req,res,next)=>{
+const isAccount = async(req,res,next)=>{
     try {
         console.log("account role middleware check krne aa rhe h");
         if(req.user.accountType!=="Accounts"){
@@ -111,7 +115,7 @@ exports.isAccount = async(req,res,next)=>{
 
 }
 
-exports.    isGraphics = async(req,res,next)=>{
+const isGraphics = async(req,res,next)=>{
 
     try {
         
@@ -133,3 +137,5 @@ exports.    isGraphics = async(req,res,next)=>{
         
     }
 }
+
+module.exports={auth,isAdmin,isSuperAdmin,isAccount,isGraphics}

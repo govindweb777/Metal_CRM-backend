@@ -18,6 +18,7 @@ exports.signUp =async(req,res)=>{
 
             })
         }
+
         const existingUser= await userModel.findOne({email});
         if(existingUser){
             return res.status(400).json({
@@ -25,6 +26,75 @@ exports.signUp =async(req,res)=>{
                 message:"User already exist",
             })
         }
+
+        const hashedPassword= await bcrypt.hash(password,10);
+
+        //create entry into db
+        const user =await userModel.create({
+            name,
+            email,
+            password:hashedPassword,
+            accountType
+        })
+
+        return res.status(200).json({
+            success:true,
+            message:"user is created successfully",
+        })
+        
+    } catch (error) {
+        console.log("problem in user signup");
+        return res.status(500).json({
+            success:false,
+            messaage:"user canot be registered,please try again",
+            error:error.message
+        })
+        
+    }
+}
+
+exports.createAccount =async(req,res)=>{
+    try {
+        const {
+            name,
+            email,
+            password,
+            accountType
+        } =req.body
+
+        if(!name || !email || !password ||!accountType){
+            return res.status(403).json({
+                success:False,
+                message:"All fields are required"
+
+            })
+        }
+
+        if (req.user.accountType !== "SuperAdmin") {
+            return res.status(403).json({
+                success: false,
+                message: "Only SuperAdmin can create new accounts"
+            });
+        }
+
+        // Allowed account types
+        const allowedAccountTypes = ["Admin", "Graphics", "Accounts", "Display"];
+        if (!allowedAccountTypes.includes(accountType)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid account type"
+            });
+        }
+
+
+        const existingUser= await userModel.findOne({email});
+        if(existingUser){
+            return res.status(400).json({
+                sucess:false,
+                message:"User already exist",
+            })
+        }
+
 
         const hashedPassword= await bcrypt.hash(password,10);
 
@@ -85,9 +155,11 @@ exports.login= async(req,res)=>{
             const payload = {
                 email:user.email,
                 id:user.id,
+                name:user.name,
                 accountType :user.accountType,
             
             }
+            console.log("payload is:",payload);
             const token= jwt.sign(payload,process.env.JWT_SECRET,{
                 expiresIn:"2h",
                 
@@ -117,10 +189,6 @@ exports.login= async(req,res)=>{
 
             });
         }
-
-
-
-
         
     } catch (error) {
         console.log(error);
@@ -133,124 +201,85 @@ exports.login= async(req,res)=>{
     }
 }
 
+
 exports.getUser= async(req,res)=>{
     try {
-        const {accountType}= req.body;
-        
-        //validate accountType
-        if(!["Graphics","Accounts","Display"].includes(accountType)){
-            return res.status(400).json({
-                success:false,
-                message:"Invalid Account Type or You are not allowed to access"
-            });
-
-
-        };
-
-        //find User by accountType
-        const users = await userModel.find({accountType});
-
-        //check if user exists or not
-
-        if(users.length===0){
-            return res.status(404).json({
-                success:false,
-                message:`No users fond with account type: ${accountType}`,
-            });
-        }
-
-        //return the user
+        const userInfo = req.user;
+        console.log("userInfo is:",userInfo)
+        const email = req.user.email;
+        const accountType=req.user.accountType;
+        const name=req.user.name;
+        console.log("email is",email);
+        console.log("accountType is:",accountType);
+        console.log("name is:",name);
         return res.status(200).json({
             success:true,
-            message:`Users eith accountType: ${accountType}`,
-            data:users,
+            message:"user detail has been fetched successfully",
+            name,
+            email,
+            accountType,
         })
 
         
     } catch (error) {
-        console.log("problem in user fetching");
-        return res.status(500).json({
+        console.log("get user mein problem h",error);
+        return res.status(400).json({
             success:false,
-            message:"problem in user fetching",
-            error:error.message,
+            message:"problem in fetching detail of user",
+            error:error.message
         })
         
     }
 }
 
-exports.getUserDetails = async (req, res) => {
-    try {
-        const { email } = req.body; 
-
-        const user = await userModel.findOne({ email }).select("name email accountType");
-         console.log("Searching for user with email:", email);
-        if (!user) {
-            return res.status(404).json({
-                success: false,
-                message: "User not found",
-            });
-        }
-        
-        return res.status(200).json({
-            success: true,
-            data: user,
-        });
-    } catch (error) {
-        console.log("Error fetching user details", error);
-        return res.status(500).json({
-            success: false,
-            message: "Error fetching user details",
-            error: error.message,
-        });
-    }
-};
-
 exports.changePassword = async (req, res) => {
     try {
-        const { email, oldPassword, newPassword } = req.body;
+        const { oldPassword, newPassword } = req.body;
+        const userId = req.user.id;
 
-        const user = await userModel.findOne({ email });
+        // Check if both old and new passwords are provided
+        if (!oldPassword || !newPassword) {
+            return res.status(400).json({
+                success: false,
+                message: "Both old and new passwords are required.",
+            });
+        }
+
+        // Fetch the user from the database
+        const user = await userModel.findById(userId);
         if (!user) {
             return res.status(404).json({
                 success: false,
-                message: "User not found",
+                message: "User not found.",
             });
         }
 
+        // Compare old password
         const isMatch = await bcrypt.compare(oldPassword, user.password);
         if (!isMatch) {
-            return res.status(400).json({
+            return res.status(401).json({
                 success: false,
-                message: "Old password is incorrect",
+                message: "Old password is incorrect.",
             });
         }
 
-        const hashedPassword = await bcrypt.hash(newPassword, 10);
-        user.password = hashedPassword;
+        // Hash new password and update
+        const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+        user.password = hashedNewPassword;
         await user.save();
 
         return res.status(200).json({
             success: true,
-            message: "Password changed successfully",
+            message: "Password updated successfully.",
         });
+
     } catch (error) {
-        console.log("Error changing password", error);
+        console.error("Error changing password:", error);
         return res.status(500).json({
             success: false,
-            message: "Error changing password",
+            message: "Something went wrong. Please try again.",
             error: error.message,
         });
     }
 };
-
-
-exports.deleteUser =async(req,res)=>{
-    try {
-
-        
-    } catch (error) {
-        
-    }
-}
-
 
