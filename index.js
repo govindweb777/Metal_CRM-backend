@@ -68,7 +68,9 @@ const fileUpload = require("express-fileupload");
 dotenv.config();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors({ credentials: true, origin: process.env.CLIENT_URL }));
+// app.use(cors({ credentials: true, origin: process.env.CLIENT_URL }));
+app.use(cors({ credentials: true }));
+
 app.use(express.json());
 app.use(cookieParser());
 app.use(
