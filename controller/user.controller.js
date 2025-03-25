@@ -283,3 +283,33 @@ exports.changePassword = async (req, res) => {
     }
 };
 
+exports.getAllUsers = async (req, res) => {
+    try {
+        // Check if the user is authorized (SuperAdmin or Admin)
+        if (req.user.accountType !== "SuperAdmin" && req.user.accountType !== "Admin") {
+            return res.status(403).json({
+                success: false,
+                message: "You don't have permission to access this resource"
+            });
+        }
+
+        // Fetch all users from database
+        // Exclude password field from the response
+        const users = await userModel.find({}, { password: 0 });
+
+        return res.status(200).json({
+            success: true,
+            message: "Users fetched successfully",
+            data: users
+        });
+
+    } catch (error) {
+        console.error("Error fetching users:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Error while fetching users",
+            error: error.message
+        });
+    }
+};
+
