@@ -3,14 +3,12 @@ const {uploadImageToCloudinary} = require("../utils/ImageUploader")
 const  WorkQueueItem = require("../models/workQueueItem.model");
 const Counter = require("../models/counter");
 
-
 exports.createOrder=async(req,res)=>{ 
   try {
     console.log("inside create order controller ",req.body);
       // const{requirements,dimensions,assignedTo}=req.body;
-      const{dimensions,assignedTo,customer,requirements}=req.body;
-
-      // console.log("requirements are:",requirements);
+      const{dimensions,assignedTo,customer,requirements,status}=req.body;
+      
       console.log("dimensions are:",dimensions);
      
 
@@ -27,6 +25,11 @@ exports.createOrder=async(req,res)=>{
               message:"All fields are mandatory"
           })
       }
+
+
+
+     
+
 
       // const filesArray= Array.isArray(files) ? files :[files]
 
@@ -59,7 +62,9 @@ exports.createOrder=async(req,res)=>{
           requirements,
           dimensions,
           // image:imageUrls,
-          // createdBy:req.user.id,
+          createdBy:req.user.id,
+          customerName:customer,
+          status:status
 
       });
  
@@ -100,7 +105,6 @@ exports.createOrder=async(req,res)=>{
       
   }
 }
-
 
 
 

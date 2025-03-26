@@ -25,7 +25,7 @@ const orderSchema=new mongoose.Schema({
 
     status:{
         type:String,
-        enum:["New","Assigned","InProgress","PendingApproval","Approved","InWorkQueue","completed","billed",'paid'],
+        enum:["New","Assigned","InProgress","PendingApproval","Approved","InWorkQueue","Completed","Billed",'Paid'],
         default:"New"
     },
 
@@ -48,25 +48,18 @@ const orderSchema=new mongoose.Schema({
         type:mongoose.Schema.Types.ObjectId,
         ref:'User',
 
+    },
+    customerName:{
+        type:String,
+        required:true
+    },
+    created: {
+        type: Date,
+        required: true,
+        default: Date.now // Automatically sets the current date if not provided
     }
 
 },{timeStamp:true});
-
-
-orderSchema.pre('save', function (next) {
-    if (this.isNew) {  // Ensure it only runs for new documents
-        this.orderId = generateUnique(); // Assign the generated ID to orderId
-    }
-    next();
-});
-
-// Function to generate a unique ID
-function generateUnique() {
-    const date = Date.now(); // Get current timestamp in milliseconds
-    const number = Math.floor(Math.random() * 10000).toString().padStart(4, '0'); // 4-digit random number
-    return `ORD-${date}-${number}`;
-}
-
 
 
 module.exports=mongoose.model("Order",orderSchema);

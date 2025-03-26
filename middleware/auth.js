@@ -49,13 +49,11 @@ const auth= async(req,res,next)=>{
 
 const isAdmin= async(req,res,next)=>{
     try {
-        if(req.user.accountType !=="Admin"){
+        if(req.user.accountType !=="Admin" && req.user.accountType !=="SuperAdmin"){
             return res.status(401).json({
                 success:false,
                 message:"this is protected route for admin only"
             })
-
-
         }
         next();
         
