@@ -11,13 +11,9 @@ const {
     convertToCustomer
     }= require('../controller/lead.controller');
 
-const{
-    createCustomer,
-    updateCustomer,
-    deleteCustomer,
-    getCustomerOrders
-
-
+const{ createCustomer, updateCustomer, deleteCustomer,
+    getCustomerOrders, 
+    getAllCustomers
     }= require("../controller/customer.controller")
 
 
@@ -41,9 +37,11 @@ router.post("/convertToCustomer/:id",auth,isAdmin,convertToCustomer);
 
 //create customer route
 router.post("/createCustomer",auth,isAdmin,createCustomer);
+
 router.put("/updateCustomer/:id",auth,isAdmin,updateCustomer);
 router.delete("/deleteCustomer/:id",auth,isAdmin,deleteCustomer);
 router.get("/getCustomerOrders/:id",auth,isAdmin,getCustomerOrders);
+router.get("/getAllCustomers", auth, isAdmin, getAllCustomers);
 
 //create Order
 

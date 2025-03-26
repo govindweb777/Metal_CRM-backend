@@ -3,7 +3,6 @@ const Order= require("../models/order.model");
 
 const Address = require("../models/Address.model")
 
-
 exports.createCustomer= async(req,res)=>{
     try {
         const{
@@ -49,10 +48,7 @@ exports.createCustomer= async(req,res)=>{
         }
 
         console.log("savedAddress is:",savedAddress);
-
-
         
-
         const newCustomer = new Customer({
             name,
             email,
@@ -90,24 +86,31 @@ exports.updateCustomer = async(req,res)=>{
         const {id}= req.params;
         const {name,email,address,phoneNo}= req.body;
 
-        console.log("address",address);
-       
-
         const existingCustomer = await Customer.findById(id);
-
-        console.log(existingCustomer);
 
         if(!existingCustomer){
             return res.status(404).json({
                 success:false,
                 message:"Customer not found"
-
             })
         }
 
-        const updateField={}
-        if(name) updateField.name=name;
-        if(email) updateField.email = email;
+        // Check email uniqueness if email is being updated
+        if(email && email !== existingCustomer.email) {
+            const trimmedEmail = email.trim();
+            const emailExists = await Customer.findOne({ email: trimmedEmail, _id: { $ne: id } });
+            if(emailExists) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Email already in use by another customer"
+                });
+            }
+        }
+
+        const updateField = {};
+        if(name) updateField.name = name;
+        if(email) updateField.email = email.trim();
+        if(phoneNo) updateField.phoneNo = phoneNo;
 
         console.log("updateField",updateField);
 
@@ -135,7 +138,6 @@ exports.updateCustomer = async(req,res)=>{
         
         
     }
-    if(phoneNo) updateField.phoneNo= phoneNo
 
         const customer = await Customer.findByIdAndUpdate(id, {$set:updateField}, { new: true }).populate(
             "address"
@@ -167,7 +169,7 @@ exports.updateCustomer = async(req,res)=>{
 exports.deleteCustomer = async(req,res)=>{
     try {
         const customer = await Customer.findById(req.params.id);
-        console.log("customer is :",customer);
+        
         if(!customer){
             return res.status(404).json({
                 success:false,
@@ -175,9 +177,9 @@ exports.deleteCustomer = async(req,res)=>{
             })
         }
 
-        const orderCount= await Order.countDocuments({customer:req.params.id});
-        console.log("order count is:",orderCount);
-        if(orderCount>0){
+        // Check for existing orders more efficiently
+        const hasOrders = await Order.exists({customer: req.params.id});
+        if(hasOrders){
             return res.status(400).json({
                 success:false,
                 message:"cannot delete the customer with the existing order,please try to deactivate instead "
@@ -218,6 +220,8 @@ exports.deleteCustomer = async(req,res)=>{
     }
 }
 
+
+
 exports.getCustomerOrders= async(req,res)=>{
     try {
         const orders= await Order.find({customer:req.params.id})
@@ -250,3 +254,25 @@ exports.getCustomerOrders= async(req,res)=>{
         
     }
 }
+
+exports.getAllCustomers = async(req,res)=>{
+    try {
+        const customers = await Customer.find()
+            .populate('address')
+            .populate('createdBy', 'name email');
+
+        return res.status(200).json({
+            success: true,
+            message: "All customers fetched successfully",
+            customers
+        });
+    } catch (error) {
+        console.error("Error fetching all customers:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Error fetching customers",
+            error: error.message
+        });
+    }
+}
+
