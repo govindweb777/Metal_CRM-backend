@@ -45,6 +45,7 @@ router.get("/getAllCustomers", auth, isAdmin, getAllCustomers);
 
 //create Order
 
+router.post("/createOrder",auth,isAdmin,createOrder);
 router.post("/createOrder/:id",auth,isAdmin,createOrder);
 router.put("/updateOrder/:id",auth,isAdmin,updateOrder);
 router.delete("/deleteOrder/:id",auth,isAdmin,deleteOrder);
