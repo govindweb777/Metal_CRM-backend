@@ -3,109 +3,183 @@ const {uploadImageToCloudinary} = require("../utils/ImageUploader")
 const  WorkQueueItem = require("../models/workQueueItem.model");
 const Counter = require("../models/counter");
 
-exports.createOrder=async(req,res)=>{ 
+exports.createOrder = async (req, res) => {
   try {
-    console.log("inside create order controller ",req.body);
-      // const{requirements,dimensions,assignedTo}=req.body;
-      const{dimensions,assignedTo,customer,requirements,status}=req.body;
-      
-      console.log("dimensions are:",dimensions);
-     
+    console.log("Inside create order controller", req.body);
 
-      // const files= req.files.images;
-      // console.log("files",files);
+    const { dimensions, assignedTo, customer, requirements, status } = req.body;
+    console.log("this is req.file",req.file);
+    const image = req.file.path;
+    const customerId = req.user.id;
 
-       const  customerId = req.user.id
-      
-      // !requirements ||  exclude this part
-      // if( !dimensions || !files){
-        if( !dimensions){
-          return res.status(400).json({
-              success:false,
-              message:"All fields are mandatory"
-          })
-      }
+    if (!dimensions) {
+      return res.status(400).json({
+        success: false,
+        message: "Dimensions field is mandatory",
+      });
+    }
 
+    let imageUrls = [];
 
+    // if(req.files && req.files.images) {
+    //   const filesArray = Array.isArray(req.files.images) ? req.files.images : [req.files.images];
 
-     
+    //   // Upload images to Cloudinary and store URLs
+    //   const uploadResults = await Promise.all(
+    //     filesArray.map((file) => uploadImageToCloudinary(file, process.env.FOLDER_NAME))
+    //   );
 
+    //   imageUrls = uploadResults.map((file) => file.secure_url);
+    // }
 
-      // const filesArray= Array.isArray(files) ? files :[files]
-
-
-       //upload Image To cloudinary
-      // const filesImage = await uploadImageToCloudinary(
-      //     files,
-      //     process.env.FOLDER_NAME
-      // );
-
-      // const imageUrls = filesImage.map((file)=>file.secure_url);
-
-
-      // console.log("filesImage is:",filesImage);
-      // console.log("imageurl is ",imageUrls);
-
-      // **Generate Sequential Order ID**
-      let counterDoc = await Counter.findOneAndUpdate(
-        { name: "orderCounter" }, // Find the counter document
-        { $inc: { seq: 1 } },     // Increment the sequence by 1
-        { new: true, upsert: true } // Return updated doc & create if missing
+    // Generate Sequential Order ID
+    let counterDoc = await Counter.findOneAndUpdate(
+      { name: "orderCounter" },
+      { $inc: { seq: 1 } },
+      { new: true, upsert: true }
     );
 
-    const newOrderId = `ORD${String(counterDoc.seq).padStart(3, '0')}`; // Format: ORD001, ORD002...
+    const newOrderId = `ORD${String(counterDoc.seq).padStart(3, '0')}`;
+
+    const newOrder = new Order({
+      orderId: newOrderId,
+      customer: customerId,
+      requirements,
+      dimensions,
+      image: image, // Ensure images are saved correctly
+      createdBy: req.user.id,
+      customerName: customer,
+      status: status || "New",
+    });
+
+    const order = await newOrder.save();
+
+    // Populate related fields
+    const populatedOrder = await Order.findById(order._id)
+      .populate("customer", "name email")
+      .populate("assignedTo", "name email")
+      .populate("createdBy", "name email");
+
+    res.status(201).json({
+      success: true,
+      message: "Order created successfully",
+      data: populatedOrder,
+    });
+
+  } catch (error) {
+    console.error("Error occurred while creating order", error);
+    return res.status(500).json({
+      success: false,
+      message: "Problem in creating the order",
+      error: error.message,
+    });
+  }
+};
+
+
+
+// exports.createOrder=async(req,res)=>{ 
+//   try {
+//     console.log("inside create order controller ",req.body);
+//       // const{requirements,dimensions,assignedTo}=req.body;
+//       const{dimensions,assignedTo,customer,requirements,status}=req.body;
+      
+//       console.log("dimensions are:",dimensions);
+     
+
+//       // const files= req.files.images;
+//       // console.log("files",files);
+
+//        const  customerId = req.user.id
+      
+//       // !requirements ||  exclude this part
+//       // if( !dimensions || !files){
+//         if( !dimensions){
+//           return res.status(400).json({
+//               success:false,
+//               message:"All fields are mandatory"
+//           })
+//       }
+
+
+
+     
+
+
+//       // const filesArray= Array.isArray(files) ? files :[files]
+
+
+//        //upload Image To cloudinary
+//       // const filesImage = await uploadImageToCloudinary(
+//       //     files,
+//       //     process.env.FOLDER_NAME
+//       // );
+
+//       // const imageUrls = filesImage.map((file)=>file.secure_url);
+
+
+//       // console.log("filesImage is:",filesImage);
+//       // console.log("imageurl is ",imageUrls);
+
+//       // **Generate Sequential Order ID**
+//       let counterDoc = await Counter.findOneAndUpdate(
+//         { name: "orderCounter" }, // Find the counter document
+//         { $inc: { seq: 1 } },     // Increment the sequence by 1
+//         { new: true, upsert: true } // Return updated doc & create if missing
+//     );
+
+//     const newOrderId = `ORD${String(counterDoc.seq).padStart(3, '0')}`; // Format: ORD001, ORD002...
 
              
-      const newOrder = new Order({
-        orderId:newOrderId,
-          customer: customerId,
-          requirements,
-          dimensions,
-          // image:imageUrls,
-          createdBy:req.user.id,
-          customerName:customer,
-          status:status
+//       const newOrder = new Order({
+//         orderId:newOrderId,
+//           customer: customerId,
+//           requirements,
+//           dimensions,
+//           // image:imageUrls,
+//           createdBy:req.user.id,
+//           customerName:customer,
+//           status:status
 
-      });
+//       });
  
-      const order= await newOrder.save();
+//       const order= await newOrder.save();
 
-        // If assigned to a user, notify them (e.g., via WebSocket)
-      //   if (assignedTo) {
-      //     io.to(`user_${assignedTo}`).emit("new-order-assigned", {
-      //         orderId: order._id,
-      //         message: "You have been assigned a new order",
-      //     });
+//         // If assigned to a user, notify them (e.g., via WebSocket)
+//       //   if (assignedTo) {
+//       //     io.to(`user_${assignedTo}`).emit("new-order-assigned", {
+//       //         orderId: order._id,
+//       //         message: "You have been assigned a new order",
+//       //     });
 
 
           
-      // }
+//       // }
 
-      //populat related field and return the related order
+//       //populat related field and return the related order
 
-      const populatedOrder= await Order.findById(order._id)
-      .populate("customer","name email")
-      .populate("assignedTo","name email")
-      .populate("createdBy","name email");
+//       const populatedOrder= await Order.findById(order._id)
+//       .populate("customer","name email")
+//       .populate("assignedTo","name email")
+//       .populate("createdBy","name email");
 
-      res.status(201).json({
-          success:true,
-          message:"Order created successfully",
-          // data:populatedOrder,
-      })
+//       res.status(201).json({
+//           success:true,
+//           message:"Order created successfully",
+//           // data:populatedOrder,
+//       })
 
       
-  } catch (error) {
-      console.error("error occured while creating order",error);
-      return res.status(400).json({
-          success:false,
-          message:"problem in creating the order",
-          error:error.message
-      })
+//   } catch (error) {
+//       console.error("error occured while creating order",error);
+//       return res.status(400).json({
+//           success:false,
+//           message:"problem in creating the order",
+//           error:error.message
+//       })
       
-  }
-}
-
+//   }
+// }
 
 
 

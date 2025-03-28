@@ -29,10 +29,9 @@ const orderSchema=new mongoose.Schema({
         default:"New"
     },
 
-    image:[{
+    image:{
         type:String,
-        }],
-    
+    },
 
     assignedTo:{
         type:mongoose.Schema.Types.ObjectId,

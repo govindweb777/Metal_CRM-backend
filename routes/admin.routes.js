@@ -1,5 +1,9 @@
 const express= require("express");
 const router = express.Router();
+const multer = require('multer');
+const {storage} = require("../config/cloudinary");
+const upload = multer({ storage });
+
 
 const {auth,isAdmin} = require("../middleware/auth");
 
@@ -45,9 +49,9 @@ router.get("/getAllCustomers", auth, isAdmin, getAllCustomers);
 
 //create Order
 
-router.post("/createOrder",auth,isAdmin,createOrder);
+router.post("/createOrder",auth,isAdmin,upload.single('image'),createOrder);
 router.post("/createOrder/:id",auth,isAdmin,createOrder);
-router.put("/updateOrder/:id",auth,isAdmin,updateOrder);
+router.put("/updateOrder/:id",auth,isAdmin, upload.single('image') ,updateOrder);
 router.delete("/deleteOrder/:id",auth,isAdmin,deleteOrder);
 router.get("/getOrderById/:id",auth,isAdmin,getOrderById,);
 router.get("/getOrders",auth,isAdmin,getOrders);

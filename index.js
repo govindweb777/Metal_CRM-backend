@@ -62,7 +62,7 @@ const database = require("./config/database");
 const dotenv = require("dotenv");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
-const { cloudinaryConnect } = require("./config/cloudinary");
+//const { cloudinaryConnect } = require("./config/cloudinary");
 const fileUpload = require("express-fileupload");
 
 dotenv.config();
@@ -74,15 +74,15 @@ app.use(cors({ credentials: true, origin: process.env.CLIENT_URL }));
 
 app.use(express.json());
 app.use(cookieParser());
-app.use(
-  fileUpload({
-    useTempFiles: true,
-    tempFileDir: "/tmp",
-  })
-);
+// app.use(
+//   fileUpload({
+//     useTempFiles: true,
+//     tempFileDir: "/tmp",
+//   })
+// );
 
 // Cloudinary connection
-cloudinaryConnect();
+//cloudinaryConnect();
 
 database.connectWithDb();
 
